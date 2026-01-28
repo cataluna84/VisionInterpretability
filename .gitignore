@@ -21,3 +21,6 @@ data/imagenette2-320
 # OS
 .DS_Store
 Thumbs.db
+
+# WANDB
+notebooks/wandb
