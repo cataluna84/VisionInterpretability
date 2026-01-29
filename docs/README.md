@@ -1,12 +1,12 @@
 # Vision Interpretability Documentation
 
-*A complete reference for understanding CNNs through two interactive notebooks*
+*A complete reference for understanding CNNs through four interactive notebooks*
 
 ---
 
 ## Project Overview
 
-This project provides **two Jupyter notebooks** for understanding how Convolutional Neural Networks interpret visual information.
+This project provides **four main Jupyter notebooks** (plus 8 Lucent tutorials) for understanding how Convolutional Neural Networks interpret visual information.
 
 ### Quick Start
 
@@ -14,6 +14,8 @@ This project provides **two Jupyter notebooks** for understanding how Convolutio
 |----------|-------------|--------|
 | **Segment 1: CNN Basics** | Convolutions, training, Grad-CAM, saliency maps | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_1_intro.ipynb) |
 | **Segment 2: Activation Max** | Feature visualization, Distill.pub Circuits | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_2_activation_max.ipynb) |
+| **Segment 3: Dataset Examples** | Activation spectrum, Distill.pub layout | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_3_dataset_images.ipynb) |
+| **Segment 3b: Faccent** | Faccent optimization techniques | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_3_faccent.ipynb) |
 
 ---
 
@@ -73,6 +75,18 @@ $$\mathbf{x}^* = \arg\max_{\mathbf{x}} a_{l,k}(f(\mathbf{x}))$$
 - Total Variation: $\mathcal{L}_{\text{TV}} = \sum |x_{i+1,j} - x_{i,j}|$
 - L2 penalty: $\mathcal{L}_{L2} = \|\mathbf{x}\|_2^2$
 
+### Dataset Examples (Segment 3)
+
+*What dataset images activate a neuron?*
+
+Shows 6 categories per neuron:
+- Negative optimized (gradient descent)
+- Minimum activation examples
+- Slightly negative (near threshold)
+- Slightly positive (near threshold)
+- Maximum activation examples
+- Positive optimized (gradient ascent)
+
 ---
 
 ## Module Reference (Segment 1 Only)
@@ -95,6 +109,19 @@ heatmap = gradcam(image, target_class=3)
 
 **Segment 2**: Uses `torch-lucent` only (no local imports)
 
+**Segment 3**:
+```python
+from segment_3_dataset_images import (
+    ActivationSpectrumTrackerV2,
+    FeatureOptimizer,
+    plot_neuron_spectrum_distill,
+)
+
+tracker = ActivationSpectrumTrackerV2(num_neurons=10)
+optimizer = FeatureOptimizer(model)
+fig = plot_neuron_spectrum_distill(...)
+```
+
 ---
 
 ## Dependencies
@@ -102,10 +129,25 @@ heatmap = gradcam(image, target_class=3)
 **Both notebooks**: torch, torchvision, matplotlib, numpy  
 **Segment 1 only**: opencv-python, scikit-learn, tqdm  
 **Segment 2 only**: **torch-lucent**
+**Segment 3 only**: **torch-lucent**, **wandb**
 
 ---
 
-## Changelog (2026-01-22)
+## Changelog (2026-01-30)
+
+- ✅ Added Segment 3b: Faccent optimization notebook
+- ✅ Added Lucent tutorial notebooks (8 notebooks)
+- ✅ Added `faccent/` library to segment_3_dataset_images module
+- ✅ Updated all documentation with accurate directory structures
+
+### Previous (2026-01-29)
+
+- ✅ Added Segment 3: Dataset Examples & Activation Spectrum
+- ✅ Added `segment_3_dataset_images` module with `visualization.py`
+- ✅ Created Distill.pub style 6-column visualization
+- ✅ Added negative optimization method to FeatureOptimizer
+
+### Previous (2026-01-22)
 
 - ✅ Added Colab one-click setup to both notebooks
 - ✅ Added LaTeX formulas & theory to all markdown cells

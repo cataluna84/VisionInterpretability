@@ -48,7 +48,7 @@ except ImportError:
     DATASETS_AVAILABLE = False
 
 try:
-    from lucent.optvis import render
+    from lucent.optvis import render, objectives
     from lucent.modelzoo import inceptionv1
     LUCENT_AVAILABLE = True
 except ImportError:
@@ -290,23 +290,24 @@ class ActivationSpectrumTracker:
 class ActivationSpectrumTrackerV2:
     """Improved tracker that tracks all 4 categories during streaming.
     
-    Maintains separate heaps for each category to enable efficient
-    tracking of slight-negative and slight-positive samples.
+    Maintains samples across the activation spectrum using percentile-based
+    categorization, computed when getting the spectrum.
+    
+    For ReLU-based networks (like InceptionV1), activations are non-negative.
+    Categories are defined by percentiles of the activation distribution:
+    - minimum: Samples with activations in the bottom 10%
+    - slight_negative: Samples with activations in the 25th-50th percentile range
+    - slight_positive: Samples with activations in the 50th-75th percentile range
+    - maximum: Samples with activations in the top 10%
     """
     
-    def __init__(self, num_neurons: int = 10, samples_per_category: int = 4):
+    def __init__(self, num_neurons: int = 10, samples_per_category: int = 9):
         self.num_neurons = num_neurons
         self.k = samples_per_category
         
-        # For each neuron, maintain 4 sorted lists
-        self.minimum: list[list[SampleRecord]] = [[] for _ in range(num_neurons)]
-        self.slight_negative: list[list[SampleRecord]] = [[] for _ in range(num_neurons)]
-        self.slight_positive: list[list[SampleRecord]] = [[] for _ in range(num_neurons)]
-        self.maximum: list[list[SampleRecord]] = [[] for _ in range(num_neurons)]
-        
-        # Track running statistics for adaptive thresholds
-        self._neg_count = [0] * num_neurons
-        self._pos_count = [0] * num_neurons
+        # Store ALL samples seen (up to a reasonable limit)
+        self._all_samples: list[list[SampleRecord]] = [[] for _ in range(num_neurons)]
+        self._max_stored = 10000  # Maximum samples to store per neuron
     
     def update(
         self,
@@ -315,7 +316,7 @@ class ActivationSpectrumTrackerV2:
         image_ids: list[int],
         labels: list[int] | None = None,
     ) -> None:
-        """Update all categories with batch of samples."""
+        """Update tracker with batch of samples."""
         batch_size = activations.shape[0]
         if labels is None:
             labels = [None] * batch_size
@@ -332,21 +333,16 @@ class ActivationSpectrumTrackerV2:
                     label=labels[b],
                 )
                 
-                # Always update min (lowest activations)
-                self._insert_min(self.minimum[n], record)
-                
-                # Always update max (highest activations)
-                self._insert_max(self.maximum[n], record)
-                
-                # Track slight categories based on sign
-                if act_val < 0:
-                    self._neg_count[n] += 1
-                    # Slight negative: closest to 0 among negatives (highest negative)
-                    self._insert_max(self.slight_negative[n], record)
+                # Store sample (with limit to avoid memory issues)
+                if len(self._all_samples[n]) < self._max_stored:
+                    bisect.insort(self._all_samples[n], record)
                 else:
-                    self._pos_count[n] += 1
-                    # Slight positive: closest to 0 among positives (lowest positive)
-                    self._insert_min(self.slight_positive[n], record)
+                    # Reservoir sampling: replace with decreasing probability
+                    import random
+                    idx = random.randint(0, len(self._all_samples[n]))
+                    if idx < self._max_stored:
+                        self._all_samples[n][idx] = record
+                        self._all_samples[n].sort()
     
     def _insert_min(self, samples: list[SampleRecord], record: SampleRecord) -> None:
         """Keep k samples with lowest activation values."""
@@ -364,12 +360,39 @@ class ActivationSpectrumTrackerV2:
             samples.pop(0)
     
     def get_spectrum(self, neuron_idx: int) -> dict[str, list[SampleRecord]]:
-        """Get the full activation spectrum for a neuron."""
+        """Get the full activation spectrum for a neuron using percentiles.
+        
+        Returns samples from 4 regions of the activation distribution:
+        - minimum: Bottom 10% of activations
+        - slight_negative: 25th-50th percentile (below median)
+        - slight_positive: 50th-75th percentile (above median)
+        - maximum: Top 10% of activations
+        """
+        samples = self._all_samples[neuron_idx]
+        n = len(samples)
+        
+        if n == 0:
+            return {"minimum": [], "slight_negative": [], "slight_positive": [], "maximum": []}
+        
+        # Samples are already sorted by activation
+        # Compute percentile indices
+        p10 = int(n * 0.10)
+        p25 = int(n * 0.25)
+        p50 = int(n * 0.50)
+        p75 = int(n * 0.75)
+        p90 = int(n * 0.90)
+        
+        # Extract samples from each region
+        minimum = samples[:min(self.k, max(1, p10))]  # Bottom 10%
+        slight_negative = samples[p25:p50][-self.k:]  # 25%-50%, take k closest to median
+        slight_positive = samples[p50:p75][:self.k]   # 50%-75%, take k closest to median
+        maximum = samples[max(0, n - p10):][-self.k:]  # Top 10%
+        
         return {
-            "minimum": sorted(self.minimum[neuron_idx], key=lambda x: x.activation),
-            "slight_negative": sorted(self.slight_negative[neuron_idx], key=lambda x: x.activation),
-            "slight_positive": sorted(self.slight_positive[neuron_idx], key=lambda x: x.activation),
-            "maximum": sorted(self.maximum[neuron_idx], key=lambda x: x.activation, reverse=True),
+            "minimum": list(minimum),
+            "slight_negative": list(slight_negative),
+            "slight_positive": list(slight_positive),
+            "maximum": list(reversed(maximum)),  # Highest first
         }
 
 
@@ -666,12 +689,14 @@ class FeatureOptimizer:
         Returns:
             PIL Image of the negative optimized visualization.
         """
-        # Negative objective - minimize activation
-        objective = f"-{layer_name}:{channel}"
+        # Create a negated channel objective using lucent's objectives API
+        # The objectives.channel() returns an Objective, which supports arithmetic
+        positive_objective = objectives.channel(layer_name, channel)
+        negative_objective = -1 * positive_objective
         
         result = render.render_vis(
             self.model,
-            objective,
+            negative_objective,
             show_image=False,
             show_inline=False,
             thresholds=(steps,),

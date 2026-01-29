@@ -4,7 +4,7 @@
 > **READ THIS FIRST**: This file contains the architectural context, design philosophy, and development guidelines for the Vision Interpretability project. All changes should align with the patterns defined here.
 
 ## Project Overview
-This project consists of **two interactive Jupyter notebooks** designed to demystify Convolutional Neural Networks (CNNs) through a "code-first, visual-first" approach.
+This project consists of **three interactive Jupyter notebooks** designed to demystify Convolutional Neural Networks (CNNs) through a "code-first, visual-first" approach.
 
 **Key Goals:**
 1.  **Visual Fidelity**: High-resolution visualizations so features are clearly visible
@@ -16,8 +16,8 @@ This project consists of **two interactive Jupyter notebooks** designed to demys
 - **Language**: Python 3.13+
 - **Deep Learning Framework**: PyTorch 2.5+
 - **Package Manager**: UV
-- **Notebooks**: Two segments covering different aspects of interpretability
-- **Feature Visualization**: torch-lucent (Segment 2)
+- **Notebooks**: Three segments covering different aspects of interpretability
+- **Feature Visualization**: torch-lucent (Segment 2 & 3)
 
 ## Directory Structure
 ```
@@ -27,17 +27,45 @@ VisionInterpretability/
 ├── pyproject.toml                             # Dependencies (UV)
 ├── notebooks/
 │   ├── cataluna84__segment_1_intro.ipynb      # Segment 1: CNN Basics
-│   └── cataluna84__segment_2_activation_max.ipynb  # Segment 2: Feature Viz
-├── src/segment_1_intro/                       # Reusable modules (Segment 1 only)
+│   ├── cataluna84__segment_2_activation_max.ipynb  # Segment 2: Feature Viz
+│   ├── cataluna84__segment_3_dataset_images.ipynb  # Segment 3: Dataset Examples
+│   ├── cataluna84__segment_3_faccent.ipynb    # Segment 3b: Faccent Optimization
+│   ├── lucent/                                # Lucent tutorial notebooks (8 notebooks)
+│   │   ├── tutorial.ipynb
+│   │   ├── activation_grids.ipynb
+│   │   ├── diversity.ipynb
+│   │   ├── feature_inversion.ipynb
+│   │   ├── GAN_parametrization.ipynb
+│   │   ├── neuron_interaction.ipynb
+│   │   ├── style_transfer.ipynb
+│   │   └── modelzoo.ipynb
+│   ├── results/                               # Notebook output artifacts
+│   └── wandb/                                 # W&B experiment logs
+├── src/segment_1_intro/                       # Reusable modules (Segment 1)
 │   ├── __init__.py
 │   ├── data.py                                # ImageNette loading
 │   ├── models.py                              # SimpleCNN, InceptionV1, training
 │   └── visualize.py                           # Grad-CAM, Saliency Maps
-├── scripts/
-│   ├── update_notebook_colab.py               # Add Colab setup cells
-│   └── enhance_notebook_theory.py             # Add formulas & theory
+├── src/segment_3_dataset_images/              # Reusable modules (Segment 3)
+│   ├── __init__.py
+│   ├── activation_pipeline.py                 # Activation extraction, spectrum tracking
+│   ├── visualization.py                       # Distill.pub style plotting
+│   └── faccent/                               # Feature visualization library
+│       ├── cam.py, mask.py, objectives.py     # Core modules
+│       ├── param.py, render.py, transform.py  # Rendering modules
+│       ├── utils.py                           # Utilities
+│       └── modelzoo/                          # InceptionV1 model
+├── scripts/                                   # Notebook enhancement scripts (16 files)
+│   ├── enhance_notebook_theory.py
+│   ├── add_colab_support_seg3.py
+│   ├── update_notebook.py
+│   └── ... (13 more)
+├── data/                                      # Dataset files
+│   ├── imagenette2-320/                       # ImageNette dataset
+│   └── segment_3_test_images/                 # Test images
 └── docs/                                      # Conceptual documentation
 ```
+
 
 ## Notebook Segments
 
@@ -75,7 +103,36 @@ VisionInterpretability/
 ✅ Uses Lucent library  
 ✅ Complete theory with formulas
 
-## Module Reference (Segment 1 Only)
+### Segment 3: Dataset Examples & Activation Spectrum
+**File**: `notebooks/cataluna84__segment_3_dataset_images.ipynb`  
+**Dependencies**: `segment_3_dataset_images.{activation_pipeline, visualization}`
+
+**Topics Covered:**
+- Finding dataset examples across activation spectrum
+- Minimum, slightly negative, slightly positive, maximum examples
+- Negative and positive optimized visualizations
+- Distill.pub style 6-column layout
+
+**Features:**
+✅ Streaming ImageNet data  
+✅ W&B experiment logging  
+✅ Publication-quality Distill.pub visualizations
+
+### Segment 3b: Faccent Optimization
+**File**: `notebooks/cataluna84__segment_3_faccent.ipynb`  
+**Dependencies**: `segment_3_dataset_images.faccent`
+
+**Topics Covered:**
+- Feature visualization with Faccent library
+- Advanced optimization techniques
+- Class activation mapping (CAM)
+
+**Features:**
+✅ Faccent library integration  
+✅ Advanced parametrization options
+
+
+## Module Reference (Segment 1)
 
 ### `data.py` - Dataset Loading
 - `load_imagenette(split, image_size, batch_size)` - Load ImageNette
@@ -94,6 +151,21 @@ VisionInterpretability/
 - `visualize_feature_maps(activation, num_maps)` - Display activations
 - `visualize_filters(layer, num_filters)` - Show learned kernels
 - `denormalize_image(tensor)` - Convert to displayable format
+
+## Module Reference (Segment 3)
+
+### `activation_pipeline.py` - Activation Extraction & Tracking
+- `ActivationExtractor(model, layer_name)` - Extract layer activations via hooks
+- `ActivationSpectrumTrackerV2(num_neurons, samples_per_category)` - Track activation spectrum
+- `ImageNetStreamer(batch_size, max_samples)` - Stream ImageNet samples
+- `FeatureOptimizer(model, device)` - Generate optimized visualizations
+  - `optimize_neuron(layer, channel)` - Positive (max) optimization
+  - `optimize_neuron_negative(layer, channel)` - Negative (min) optimization
+- `WANDBExperimentLogger(project, run_name)` - W&B logging
+- `run_pipeline(config)` - Full pipeline execution
+
+### `visualization.py` - Distill.pub Style Plotting
+- `plot_neuron_spectrum_distill(neuron_idx, layer_name, spectrum, ...)` - 6-column layout
 
 ## Development Guidelines
 
