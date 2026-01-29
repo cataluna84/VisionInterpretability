@@ -643,6 +643,46 @@ class FeatureOptimizer:
             return Image.fromarray(img_array)
         
         return None
+    
+    def optimize_neuron_negative(
+        self,
+        layer_name: str,
+        channel: int,
+        image_size: int = 224,
+        steps: int = 512,
+        show_progress: bool = False,
+    ) -> Image.Image:
+        """Generate optimized image that minimally activates (suppresses) a neuron.
+        
+        Uses negative objective to find patterns the neuron avoids.
+        
+        Args:
+            layer_name: Layer name (e.g., "mixed4a").
+            channel: Channel index within the layer.
+            image_size: Size of generated image.
+            steps: Number of optimization steps.
+            show_progress: Whether to show optimization progress.
+            
+        Returns:
+            PIL Image of the negative optimized visualization.
+        """
+        # Negative objective - minimize activation
+        objective = f"-{layer_name}:{channel}"
+        
+        result = render.render_vis(
+            self.model,
+            objective,
+            show_image=False,
+            show_inline=False,
+            thresholds=(steps,),
+        )
+        
+        if result and len(result) > 0:
+            img_array = result[0][0]
+            img_array = (img_array * 255).astype(np.uint8)
+            return Image.fromarray(img_array)
+        
+        return None
 
 
 def run_pipeline(
