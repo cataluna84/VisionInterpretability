@@ -301,13 +301,13 @@ class ActivationSpectrumTrackerV2:
     - maximum: Samples with activations in the top 10%
     """
     
-    def __init__(self, num_neurons: int = 10, samples_per_category: int = 9):
+    def __init__(self, num_neurons: int = 10, samples_per_category: int = 9, max_stored_samples: int = 1000):
         self.num_neurons = num_neurons
         self.k = samples_per_category
         
         # Store ALL samples seen (up to a reasonable limit)
         self._all_samples: list[list[SampleRecord]] = [[] for _ in range(num_neurons)]
-        self._max_stored = 10000  # Maximum samples to store per neuron
+        self._max_stored = max_stored_samples  # Maximum samples to store per neuron
     
     def update(
         self,
