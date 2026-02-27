@@ -24,3 +24,6 @@ Thumbs.db
 
 # WANDB
 notebooks/wandb
+
+# Results
+notebooks/results
