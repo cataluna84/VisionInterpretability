@@ -13,6 +13,7 @@ __pycache__/
 data/imagenette2-320.tgz
 data/imagenette2-320
 *.parquet
+data/imagenet-1k-wds
 
 # IDE
 .vscode/

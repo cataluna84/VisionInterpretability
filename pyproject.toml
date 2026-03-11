@@ -31,6 +31,8 @@ dependencies = [
     "einops>=0.8.1",
     "imageio>=2.37.2",
     "wandb>=0.18.0",
+    "webdataset>=0.2.100",
+    "huggingface-hub>=0.30.0",
 ]
 
 [build-system]
