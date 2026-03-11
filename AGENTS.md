@@ -4,33 +4,41 @@
 > **READ THIS FIRST**: This file contains the architectural context, design philosophy, and development guidelines for the Vision Interpretability project. All changes should align with the patterns defined here.
 
 ## Project Overview
-This project consists of **three interactive Jupyter notebooks** designed to demystify Convolutional Neural Networks (CNNs) through a "code-first, visual-first" approach.
+This project consists of **four interactive tutorial notebooks** plus **two canonical production notebooks** designed to demystify Convolutional Neural Networks (CNNs) through a "code-first, visual-first" approach.
 
 **Key Goals:**
 1.  **Visual Fidelity**: High-resolution visualizations so features are clearly visible
 2.  **Interactive Learning**: Every concept has runnable code and visual output
 3.  **Transparency**: Implement interpretability methods from scratch with mathematical rigor
-4.  **Colab-Ready**: One-click execution on Google Colab
+4.  **Colab-Ready**: Tutorial notebooks have one-click execution on Google Colab
+5.  **Local Execution**: Canonical notebooks run locally on Windows with GPU, featuring checkpoint/resume and memory management
 
 ## Architecture & Tech Stack
 - **Language**: Python 3.13+
 - **Deep Learning Framework**: PyTorch 2.5+
-- **Package Manager**: UV
-- **Notebooks**: Three segments covering different aspects of interpretability
-- **Feature Visualization**: torch-lucent (Segment 2 & 3)
+- **Package Manager**: UV (all commands use `uv run`)
+- **Notebooks**: Four tutorial segments + two canonical Windows notebooks
+- **Feature Visualization**: torch-lucent (Segments 2 & 3), faccent (Segment 3b)
+- **Data**: ImageNette (Segment 1), ImageNet-1k WebDataset shards (Segment 3 Canonical)
 
 ## Directory Structure
 ```
 VisionInterpretability/
-├── AGENTS.md                                  # YOU ARE HERE
-├── README.md                                  # Public documentation
-├── pyproject.toml                             # Dependencies (UV)
+├── AGENTS.md                                      # YOU ARE HERE
+├── README.md                                      # Public documentation (GitHub front page)
+├── pyproject.toml                                 # Dependencies (UV)
+├── uv.lock                                        # Locked dependency versions
+│
 ├── notebooks/
-│   ├── cataluna84__segment_1_intro.ipynb      # Segment 1: CNN Basics
-│   ├── cataluna84__segment_2_activation_max.ipynb  # Segment 2: Feature Viz
-│   ├── cataluna84__segment_3_dataset_images.ipynb  # Segment 3: Dataset Examples
-│   ├── cataluna84__segment_3_faccent.ipynb    # Segment 3b: Faccent Optimization
-│   ├── lucent/                                # Lucent tutorial notebooks (8 notebooks)
+│   ├── cataluna84__segment_1_intro.ipynb           # Tutorial: CNN Basics
+│   ├── cataluna84__segment_2_activation_max.ipynb  # Tutorial: Activation Max
+│   ├── cataluna84__segment_3_dataset_images.ipynb  # Tutorial: Dataset Examples
+│   ├── cataluna84__segment_3_faccent.ipynb         # Tutorial: Faccent Optimization
+│   ├── Segment_2_canonical_Windows.ipynb           # Canonical: Batch activation max (local)
+│   ├── Segment_3_canonical_Windows.ipynb           # Canonical: Top-K extraction (local)
+│   ├── cataluna84__segment_2_activation_max_canonical.ipynb  # Earlier canonical draft
+│   ├── cataluna84__segment_3_dataset_images_v2.ipynb         # Earlier v2 draft
+│   ├── lucent/                                    # Lucent tutorial notebooks (8)
 │   │   ├── tutorial.ipynb
 │   │   ├── activation_grids.ipynb
 │   │   ├── diversity.ipynb
@@ -39,56 +47,74 @@ VisionInterpretability/
 │   │   ├── neuron_interaction.ipynb
 │   │   ├── style_transfer.ipynb
 │   │   └── modelzoo.ipynb
-│   ├── results/                               # Notebook output artifacts
-│   └── wandb/                                 # W&B experiment logs
-├── src/segment_1_intro/                       # Reusable modules (Segment 1)
-│   ├── __init__.py
-│   ├── data.py                                # ImageNette loading
-│   ├── models.py                              # SimpleCNN, InceptionV1, training
-│   └── visualize.py                           # Grad-CAM, Saliency Maps
-├── src/segment_3_dataset_images/              # Reusable modules (Segment 3)
-│   ├── __init__.py
-│   ├── activation_pipeline.py                 # Activation extraction, spectrum tracking
-│   ├── visualization.py                       # Distill.pub style plotting
-│   └── faccent/                               # Feature visualization library
-│       ├── cam.py, mask.py, objectives.py     # Core modules
-│       ├── param.py, render.py, transform.py  # Rendering modules
-│       ├── utils.py                           # Utilities
-│       └── modelzoo/                          # InceptionV1 model
-├── scripts/                                   # Notebook enhancement scripts (16 files)
-│   ├── enhance_notebook_theory.py
-│   ├── add_colab_support_seg3.py
-│   ├── update_notebook.py
-│   └── ... (13 more)
-├── data/                                      # Dataset files
-│   ├── imagenette2-320/                       # ImageNette dataset
-│   └── segment_3_test_images/                 # Test images
-└── docs/                                      # Conceptual documentation
+│   └── results/                                   # Notebook output artifacts
+│       ├── checkpoints/                           # Pipeline checkpoints
+│       └── dataset_images/                        # Extracted top-K images
+│
+├── src/
+│   ├── segment_1_intro/                           # Reusable modules (Segment 1)
+│   │   ├── __init__.py
+│   │   ├── data.py                                # ImageNette loading
+│   │   ├── models.py                              # SimpleCNN, InceptionV1, training
+│   │   └── visualize.py                           # Grad-CAM, Saliency Maps
+│   └── segment_3_dataset_images/                  # Reusable modules (Segment 3)
+│       ├── __init__.py
+│       ├── activation_pipeline.py                 # Activation extraction, spectrum tracking
+│       ├── visualization.py                       # Distill.pub style plotting
+│       └── faccent/                               # Feature visualization library
+│           ├── __init__.py
+│           ├── cam.py                             # Class activation mapping
+│           ├── mask.py                            # Masking utilities
+│           ├── objectives.py, objectives_util.py  # Optimization objectives
+│           ├── param.py, param_util.py            # Image parameterization
+│           ├── render.py                          # Rendering engine
+│           ├── transform.py                       # Image transforms
+│           ├── utils.py                           # Utilities
+│           ├── clean_decorrelated.npy             # Decorrelation matrix
+│           └── modelzoo/                          # InceptionV1 model
+│               ├── __init__.py, util.py
+│               ├── imagenet_labels.txt
+│               ├── inceptionv1/                   # Model definition
+│               └── misc/                          # Model helpers
+│
+├── scripts/                                       # Notebook enhancement & utility scripts (35)
+│
+├── data/                                          # Dataset files
+│   ├── imagenet-1k-wds/                           # ImageNet-1k WDS shards (~144 GB)
+│   ├── segment_3_test_images/                     # Test images
+│   ├── dog_cat.png                                # Sample image
+│   ├── transfer_big_ben.png                       # Style transfer content
+│   ├── transfer_picasso.png                       # Style transfer style
+│   └── transfer_vangogh.png                       # Style transfer style
+│
+└── docs/                                          # Conceptual documentation
+    ├── README.md                                  # Formula reference & changelog
+    └── performance_optimization.md                # Performance tuning guide
 ```
 
 
 ## Notebook Segments
 
 ### Segment 1: CNN Basics & Interpretability
-**File**: `notebooks/cataluna84__segment_1_intro.ipynb`  
+**File**: `notebooks/cataluna84__segment_1_intro.ipynb`
 **Dependencies**: `segment_1_intro.{data, models, visualize}`
 
 **Topics Covered:**
 - Image tensor representation: $(C, H, W)$ format
 - Convolution operations with mathematical formulas
 - CNN architecture & training on ImageNette
-- Feature maps & filter visualization  
+- Feature maps & filter visualization
 - Saliency maps: $S = |\nabla_x y^c|$
 - Grad-CAM: $L^c = \text{ReLU}(\sum_k \alpha_k^c A^k)$
 
 **Features:**
-✅ "Open in Colab" badge  
-✅ Auto-setup cell (clone repo, install deps)  
-✅ LaTeX formulas & research references  
+✅ "Open in Colab" badge
+✅ Auto-setup cell (clone repo, install deps)
+✅ LaTeX formulas & research references
 ✅ PEP-8 Google-style docstrings
 
 ### Segment 2: Activation Maximization
-**File**: `notebooks/cataluna84__segment_2_activation_max.ipynb`  
+**File**: `notebooks/cataluna84__segment_2_activation_max.ipynb`
 **Dependencies**: `torch-lucent` (NO local .py files)
 
 **Topics Covered:**
@@ -99,12 +125,27 @@ VisionInterpretability/
 - Reproducing Distill.pub Circuits visualizations
 
 **Features:**
-✅ Self-contained (no local imports)  
-✅ Uses Lucent library  
+✅ Self-contained (no local imports)
+✅ Uses Lucent library
 ✅ Complete theory with formulas
 
+### Segment 2 Canonical (Local Windows)
+**File**: `notebooks/Segment_2_canonical_Windows.ipynb`
+**Dependencies**: `torch-lucent`
+
+**Topics Covered:**
+- Batch activation maximization for every neuron in a chosen InceptionV1 layer
+- FFT-parameterized gradient ascent via Lucent
+- Lossless `.png` output per neuron
+
+**Features:**
+✅ Resume support (skips neurons with existing `.png` files)
+✅ GPU memory management (`gc.collect` + `torch.cuda.empty_cache`)
+✅ Configurable layer and neuron ranges
+✅ Designed for local Windows execution with GPU
+
 ### Segment 3: Dataset Examples & Activation Spectrum
-**File**: `notebooks/cataluna84__segment_3_dataset_images.ipynb`  
+**File**: `notebooks/cataluna84__segment_3_dataset_images.ipynb`
 **Dependencies**: `segment_3_dataset_images.{activation_pipeline, visualization}`
 
 **Topics Covered:**
@@ -114,12 +155,31 @@ VisionInterpretability/
 - Distill.pub style 6-column layout
 
 **Features:**
-✅ Streaming ImageNet data  
-✅ W&B experiment logging  
+✅ Streaming ImageNet data
+✅ W&B experiment logging
 ✅ Publication-quality Distill.pub visualizations
 
+### Segment 3 Canonical (Local Windows)
+**File**: `notebooks/Segment_3_canonical_Windows.ipynb`
+**Dependencies**: `torch-lucent`, `webdataset`, `huggingface-hub`
+
+**Topics Covered:**
+- Two-pass top-K dataset image extraction over ~1.28M ImageNet images
+- Pass 1: Stream local WDS shards, compute per-channel activations with AMP (FP16), maintain min-heaps
+- Pass 2: Re-stream to save full images and spatially-cropped patches
+- Atomic checkpoint/resume system
+- 4-layer shard integrity verification
+
+**Features:**
+✅ Local ImageNet-1k WDS shards (auto-download via `huggingface_hub`)
+✅ Atomic checkpointing (`.tmp` → `os.replace` → `.pkl`)
+✅ AMP (FP16) for halved activation memory
+✅ DataLoader smoke test before pipeline execution
+✅ Configurable channel ranges and batch sizes
+✅ Designed for 8 GB GPU memory budget
+
 ### Segment 3b: Faccent Optimization
-**File**: `notebooks/cataluna84__segment_3_faccent.ipynb`  
+**File**: `notebooks/cataluna84__segment_3_faccent.ipynb`
 **Dependencies**: `segment_3_dataset_images.faccent`
 
 **Topics Covered:**
@@ -128,7 +188,7 @@ VisionInterpretability/
 - Class activation mapping (CAM)
 
 **Features:**
-✅ Faccent library integration  
+✅ Faccent library integration
 ✅ Advanced parametrization options
 
 
@@ -182,8 +242,15 @@ VisionInterpretability/
 
 ### 3. Dependency Management
 - Use `uv add <package>` to add dependencies
+- Use `uv run <command>` to run any project command
 - `pyproject.toml` is source of truth
 - Segment 2 requires `torch-lucent` in addition to core deps
+- Segment 3 Canonical requires `webdataset` and `huggingface-hub`
+
+### 4. Data Management
+- `data/imagenet-1k-wds/` contains local ImageNet WDS shards (~144 GB), downloaded at runtime
+- `data/imagenette2-320/` is gitignored (downloaded at runtime)
+- Style transfer images (`data/transfer_*.png`) are tracked
 
 ## Interpretability Concepts
 
@@ -194,3 +261,4 @@ VisionInterpretability/
 | **Saliency** | Input gradient magnitude | $S = \|\nabla_x y^c\|$ |
 | **Grad-CAM** | Weighted activation map | $L^c = \text{ReLU}(\sum_k \alpha_k^c A^k)$ |
 | **Activation Max** | Optimal input for neuron | $\mathbf{x}^* = \arg\max_{\mathbf{x}} a_{l,k}(f(\mathbf{x}))$ |
+| **Top-K Extraction** | Highest-activating dataset images | $\text{score}_c(x) = \max_{i,j} A^c_{i,j}(x)$ |

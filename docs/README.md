@@ -1,12 +1,12 @@
 # Vision Interpretability Documentation
 
-*A complete reference for understanding CNNs through four interactive notebooks*
+*A complete reference for understanding CNNs through four tutorial notebooks and two canonical production notebooks*
 
 ---
 
 ## Project Overview
 
-This project provides **four main Jupyter notebooks** (plus 8 Lucent tutorials) for understanding how Convolutional Neural Networks interpret visual information.
+This project provides **four main tutorial notebooks** (Colab-ready) plus **two canonical production notebooks** (local Windows execution) and **8 Lucent tutorials** for understanding how Convolutional Neural Networks interpret visual information.
 
 ### Quick Start
 
@@ -16,6 +16,8 @@ This project provides **four main Jupyter notebooks** (plus 8 Lucent tutorials) 
 | **Segment 2: Activation Max** | Feature visualization, Distill.pub Circuits | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_2_activation_max.ipynb) |
 | **Segment 3: Dataset Examples** | Activation spectrum, Distill.pub layout | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_3_dataset_images.ipynb) |
 | **Segment 3b: Faccent** | Faccent optimization techniques | [![Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/cataluna84/VisionInterpretability/blob/main/notebooks/cataluna84__segment_3_faccent.ipynb) |
+| **Seg 2 Canonical** | Batch activation max, all neurons, resume support | Local: `uv run jupyter lab` |
+| **Seg 3 Canonical** | Two-pass top-K extraction, checkpointing, AMP | Local: `uv run jupyter lab` |
 
 ---
 
@@ -39,7 +41,7 @@ $$S(i, j) = \sum_{m} \sum_{n} I(i+m, j+n) \cdot K(m, n)$$
 ### Feature Hierarchy
 
 | Layer | Detects |
-|-------|---------|
+|-------|---------| 
 | Conv1 | Edges, colors |
 | Conv2-3 | Textures, patterns |
 | Conv4+ | Object parts |
@@ -87,9 +89,19 @@ Shows 6 categories per neuron:
 - Maximum activation examples
 - Positive optimized (gradient ascent)
 
+### Top-K Extraction (Segment 3 Canonical)
+
+*Which images in the full dataset most activate each channel?*
+
+$$\text{score}_{c}(x) = \max_{i,j} \; A^c_{i,j}(x)$$
+
+Two-pass pipeline:
+1. **Pass 1** — Stream all images, maintain per-channel min-heaps of size K
+2. **Pass 2** — Re-stream, save full images + spatially-cropped patches
+
 ---
 
-## Module Reference (Segment 1 Only)
+## Module Reference
 
 ```python
 from segment_1_intro import data, models, visualize
@@ -126,28 +138,43 @@ fig = plot_neuron_spectrum_distill(...)
 
 ## Dependencies
 
-**Both notebooks**: torch, torchvision, matplotlib, numpy  
-**Segment 1 only**: opencv-python, scikit-learn, tqdm  
-**Segment 2 only**: **torch-lucent**
-**Segment 3 only**: **torch-lucent**, **wandb**
+All managed via `uv` — run `uv sync` to install, `uv run <command>` to execute.
+
+**Core**: torch, torchvision, matplotlib, numpy, pillow, scipy
+**Segment 1**: opencv-python, scikit-learn, tqdm, captum
+**Segment 2**: **torch-lucent**
+**Segment 3**: **torch-lucent**, **wandb**, **datasets**
+**Segment 3 Canonical**: **webdataset**, **huggingface-hub**
+**Visualization**: plotly, kaleido, ipywidgets
+**ML/CV**: timm, kornia, einops
 
 ---
 
-## Changelog (2026-01-30)
+## Changelog
+
+### 2026-03-11
+
+- ✅ Updated all documentation with accurate directory structures
+- ✅ Added Segment 2 Canonical notebook (batch activation max for Windows)
+- ✅ Added Segment 3 Canonical notebook (top-K extraction pipeline)
+- ✅ Standardized all commands to `uv run`
+- ✅ Updated dependency lists to match `pyproject.toml`
+
+### 2026-01-30
 
 - ✅ Added Segment 3b: Faccent optimization notebook
 - ✅ Added Lucent tutorial notebooks (8 notebooks)
 - ✅ Added `faccent/` library to segment_3_dataset_images module
 - ✅ Updated all documentation with accurate directory structures
 
-### Previous (2026-01-29)
+### 2026-01-29
 
 - ✅ Added Segment 3: Dataset Examples & Activation Spectrum
 - ✅ Added `segment_3_dataset_images` module with `visualization.py`
 - ✅ Created Distill.pub style 6-column visualization
 - ✅ Added negative optimization method to FeatureOptimizer
 
-### Previous (2026-01-22)
+### 2026-01-22
 
 - ✅ Added Colab one-click setup to both notebooks
 - ✅ Added LaTeX formulas & theory to all markdown cells
